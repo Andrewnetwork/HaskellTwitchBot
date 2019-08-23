@@ -2,6 +2,7 @@ module Lib
     ( main
     , grabAfter
     , process_event
+    , Net
     )
 where
 
@@ -15,12 +16,7 @@ import           Control.Monad.Trans.Reader
 import           Control.Monad.IO.Class
 import           Control.Exception
 import qualified Config                        as C
-
-data IRC_Event  =  COMMAND IRC_Command | OTHER String
-data IRC_Command = PING | PONG | PASS String | NICK String | JOIN String | PRIVMSG {get_user::String,  get_message::String}
-data Bot = Bot { botSocket :: Handle, channel :: String}
-
-type Net = ReaderT Bot IO
+import IRCTypes
 
 instance Show IRC_Command where
     show PING     = "> PING"
@@ -33,7 +29,6 @@ instance Show IRC_Event where
     show (COMMAND c) = show c
     show (OTHER   m) = "OTHER: " ++ m
 
-target_number = 34 :: Integer
 
 main :: IO ()
 main = bracket connect disconnect loop
@@ -44,7 +39,7 @@ main = bracket connect disconnect loop
 connect :: IO Bot
 connect = notify $ do
     h <- connectTo C.server C.port
-    return (Bot h C.channel)
+    return (Bot h)
   where
     notify = bracket_
         (putStrLn ("Connecting to " ++ C.server ++ " ...") >> hFlush stdout)
@@ -78,19 +73,6 @@ grabAfter (x : xs) char cntr | x == char = grabAfter xs char (cntr - 1)
 grabAfter [] _ _ = ""
 
 
-make_guess :: String -> Maybe Integer -> String
-make_guess user (Just guess)
-    | guess == target_number = user ++ " guessed correctly!"
-    | otherwise              = user ++ " guessed incorrectly!"
-make_guess user Nothing = user ++ " doesn't follow instructions!"
-
-handle_guess :: String -> String -> Net ()
-handle_guess user message = do
-    h <- asks botSocket
-    issue_command $ PRIVMSG "amathematicalway_bot" (make_guess user guess)
-    where guess = readMaybe message :: Maybe Integer
-
-
 -- Process each line from the server
 listen :: Net ()
 listen = forever $ do
@@ -99,7 +81,7 @@ listen = forever $ do
     let evnt = process_event line
     liftIO $ print evnt
     case evnt of
-        COMMAND (PRIVMSG user message) -> handle_guess user message
+        COMMAND (PRIVMSG user message) -> issue_command (PRIVMSG "amathematicalway_bot" (C.input_handler user message))
         COMMAND PING                   -> issue_command PONG
         _                              -> return ()
   where

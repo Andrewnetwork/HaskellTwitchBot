@@ -1,4 +1,4 @@
 .stack-work/
 haskell-twitch-bot.cabal
 *~
-src/Secret.hs
+src/config/Secret.hs

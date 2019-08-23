@@ -28,7 +28,7 @@ dependencies:
 - transformers
 
 library:
-  source-dirs: src
+  source-dirs: [src,src/config,src/bots]
 
 executables:
   haskell-twitch-bot-exe:
