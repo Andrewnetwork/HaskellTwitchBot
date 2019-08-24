@@ -5,6 +5,9 @@ module NumberGuesser
     , Bot(..)
     , BotState
     , greeting
+    , server
+    , port
+    , channel
     )
 where
 
@@ -12,7 +15,12 @@ import           IRCTypes
 import           Text.Read               hiding ( get )
 import           Control.Monad.State.Lazy
 import           System.IO
+import qualified Network.Socket                as N
 
+-- Settings 
+server = "irc.chat.twitch.tv" :: String
+port = 6667 :: N.PortNumber
+channel = "#amathematicalway" :: String
 -- Bot Data Structures 
 type BotState = Bool
 data Bot = Bot { botSocket :: Handle, botState :: BotState }
