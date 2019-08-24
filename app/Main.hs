@@ -2,5 +2,5 @@ module Main where
 
 import qualified Lib as L
 
-main :: IO ()
-main = putStrLn "Hello"
+main :: IO ((), L.Bot)
+main = L.main 

@@ -1,24 +1,22 @@
 module Lib
     ( main
-    , grabAfter
-    , process_event
-    , Net
+    , Bot
     )
 where
 
 -------------- ### Change to Your Bot ###-----------------
-import TemplateBot
+import           CountingBot
 ----------------------------------------------------------
 
 import           System.IO
 import qualified Network.Socket                as N
 import qualified Secret                        as SECRET
 import           Data.List
-import           Text.Read hiding(get)
+import           Text.Read               hiding ( get )
 import           Control.Monad.State.Lazy
 import           Control.Monad.IO.Class
-import           Control.Exception                   
-import IRCTypes
+import           Control.Exception
+import           IRCTypes
 
 instance Show IRC_Command where
     show PING     = "PING"
@@ -29,10 +27,10 @@ instance Show IRC_Command where
     show PONG     = "PONG"
 
 instance Show IRC_Event where
-    show (COMMAND c) = "< "++show c
+    show (COMMAND c) = "< " ++ show c
     show (OTHER   m) = "< OTHER: " ++ m
 
-main :: IO ((),Bot)
+main :: IO ((), Bot)
 main = bracket connect disconnect loop
   where
     disconnect = hClose . botSocket
@@ -50,10 +48,9 @@ connect = notify $ do
 join_server :: Net ()
 join_server = do
     issue_command (PASS SECRET.oauth_key)
-    issue_command (NICK "abot")
+    issue_command (NICK "BOT")
     issue_command (JOIN channel)
-    issue_command
-        (PRIVMSG "abot" greeting)
+    issue_command (PRIVMSG "BOT" greeting)
     listen
 
 process_event :: String -> IRC_Event
@@ -75,14 +72,15 @@ grabAfter [] _ _ = ""
 
 listen :: Net ()
 listen = forever $ do
-    state   <- get
-    line <- liftIO $ hGetLine (botSocket state)
+    state <- get
+    line  <- liftIO $ hGetLine (botSocket state)
     let evnt = process_event line
     liftIO $ print evnt
     case evnt of
-        COMMAND (PRIVMSG user message) -> input_handler (\x->issue_command (PRIVMSG "abot" x)) user message
-        COMMAND PING                   -> issue_command PONG
-        _                              -> return ()
+        COMMAND (PRIVMSG user message) ->
+            input_handler (\x -> issue_command (PRIVMSG "BOT" x)) user message
+        COMMAND PING -> issue_command PONG
+        _            -> return ()
   where
     forever :: Net () -> Net ()
     forever a = do
