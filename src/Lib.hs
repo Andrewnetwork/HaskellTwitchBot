@@ -11,11 +11,11 @@ import           System.IO
 import qualified Network.Socket                as N
 import qualified Secret                        as SECRET
 import           Data.List
-import           Text.Read
-import           Control.Monad.Trans.Reader
+import           Text.Read hiding(get)
+import           Control.Monad.State.Lazy
 import           Control.Monad.IO.Class
 import           Control.Exception
-import qualified Config                        as C
+import Config                    
 import IRCTypes
 
 instance Show IRC_Command where
@@ -30,28 +30,28 @@ instance Show IRC_Event where
     show (OTHER   m) = "OTHER: " ++ m
 
 
-main :: IO ()
+main :: IO ((),Bot)
 main = bracket connect disconnect loop
   where
     disconnect = hClose . botSocket
-    loop       = runReaderT join_server
+    loop       = runStateT join_server
 
 connect :: IO Bot
 connect = notify $ do
-    h <- connectTo C.server C.port
-    return (Bot h)
+    h <- connectTo server port
+    return (Bot h initial_state)
   where
     notify = bracket_
-        (putStrLn ("Connecting to " ++ C.server ++ " ...") >> hFlush stdout)
+        (putStrLn ("Connecting to " ++ server ++ " ...") >> hFlush stdout)
         (putStrLn "done.")
 
 join_server :: Net ()
 join_server = do
     issue_command (PASS SECRET.oauth_key)
     issue_command (NICK "amathematicalway_bot")
-    issue_command (JOIN C.channel)
+    issue_command (JOIN channel)
     issue_command
-        (PRIVMSG "amathematicalway_bot" "I have a number, please guess it!")
+        (PRIVMSG "amathematicalway_bot" greeting)
     listen
 
 
@@ -76,12 +76,12 @@ grabAfter [] _ _ = ""
 -- Process each line from the server
 listen :: Net ()
 listen = forever $ do
-    h    <- asks botSocket
-    line <- liftIO $ hGetLine h
+    state   <- get
+    line <- liftIO $ hGetLine (botSocket state)
     let evnt = process_event line
     liftIO $ print evnt
     case evnt of
-        COMMAND (PRIVMSG user message) -> issue_command (PRIVMSG "amathematicalway_bot" (C.input_handler user message))
+        COMMAND (PRIVMSG user message) ->  input_handler (\x->issue_command (PRIVMSG "amathematicalway_bot" x)) user message
         COMMAND PING                   -> issue_command PONG
         _                              -> return ()
   where
@@ -94,7 +94,8 @@ listen = forever $ do
 -- Send a message to a handle
 issue_command :: IRC_Command -> Net ()
 issue_command cmd = do
-    h <- asks botSocket
+    state <- get
+    let h = (botSocket state)
     liftIO $ print cmd
     case cmd of
         PONG   -> write h "PONG\r\n"
@@ -103,7 +104,7 @@ issue_command cmd = do
         PASS x -> write h ("PASS " ++ x ++ "\r\n")
         JOIN x -> write h ("JOIN " ++ x ++ "\r\n")
         PRIVMSG _ message ->
-            write h ("PRIVMSG " ++ C.channel ++ " :" ++ message ++ "\r\n")
+            write h ("PRIVMSG " ++ channel ++ " :" ++ message ++ "\r\n")
     where write h str = liftIO $ hPutStr h str
 
 
