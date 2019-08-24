@@ -5,7 +5,7 @@ module Lib
 where
 
 -------------- ### Change to Your Bot ###-----------------
-import           CountingBot
+import           HangmanBot
 ----------------------------------------------------------
 
 import           System.IO

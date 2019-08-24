@@ -15,13 +15,13 @@ import           Control.Monad.State.Lazy
 import           System.IO
 import qualified Network.Socket                as N
 
--- Bot State
-type BotState = Integer
-initial_state = 0
 -- Settings 
 server = "irc.chat.twitch.tv" :: String
 port = 6667 :: N.PortNumber
 channel = "#amathematicalway" :: String
+-- Bot State
+type BotState = Integer
+initial_state = 0
 -- Bot Greeting 
 greeting = "We will now count."
 -- Bot Functions 

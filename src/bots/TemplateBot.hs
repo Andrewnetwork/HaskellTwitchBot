@@ -21,13 +21,15 @@ import qualified Network.Socket                as N
 server = "irc.chat.twitch.tv" :: String
 port = 6667 :: N.PortNumber
 channel = "#amathematicalway" :: String
--- Bot Data Structures 
+-- Bot State
 type BotState = ()
-data Bot = Bot { botSocket :: Handle, botState :: BotState }
-type Net = StateT Bot IO
--- Bot Constants 
+initial_state = () :: BotState
+-- Bot Greeting
 greeting = "I am a basic bot."
-initial_state = ()
 -- Bot Functions
 input_handler :: (String -> Net ()) -> String -> String -> Net ()
 input_handler writer user message = writer $ "Hello "++user++", I am a basic bot."
+
+--- ### Bot Data Structures: Don't Touch ### ---
+data Bot = Bot { botSocket :: Handle, botState :: BotState }
+type Net = StateT Bot IO
